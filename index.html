@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gerador de Proposta EVO Saúde</title>
+  <link rel="icon" type="image/svg+xml" href="./document-svgrepo-com.svg">
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loader-card">
+      <div class="loader-logo"></div>
+      <div class="spinner"></div>
+      <strong id="loadingText">Processando...</strong>
+      <span>Aguarde um instante</span>
+    </div>
+  </div>
+
+  <button id="themeToggle" class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Alternar tema">
+    🌙
+  </button>
+  <main class="container app-shell">
+    <header class="header">
+      <img src="logo.png" alt="EVO Saúde" />
+      <div>
+        <h1>Gerador de Proposta EVO Saúde</h1>
+        <p>Preencha os campos abaixo para gerar a proposta e anexá-la automaticamente ao PDF base da proposta comercial.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Dados da empresa</h2>
+      <p class="hint">Informe primeiro o CNPJ para preenchimento automático dos dados disponíveis.</p>
+      <div class="grid">
+        <label>CNPJ<input id="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"><small id="cnpjStatus"></small></label>
+        <label>Razão Social<input id="razaoSocial"></label>
+        <label>CEP<input id="cep" inputmode="numeric" maxlength="9" placeholder="00000-000"><small id="cepStatus"></small></label>
+        <label>Cidade<input id="cidade" value="BRASÍLIA"></label>
+        <label>Estado
+          <select id="estado">
+            <option value="">Selecione</option>
+            <option value="AC">AC - Acre</option>
+            <option value="AL">AL - Alagoas</option>
+            <option value="AP">AP - Amapá</option>
+            <option value="AM">AM - Amazonas</option>
+            <option value="BA">BA - Bahia</option>
+            <option value="CE">CE - Ceará</option>
+            <option value="DF" selected>DF - Distrito Federal</option>
+            <option value="ES">ES - Espírito Santo</option>
+            <option value="GO">GO - Goiás</option>
+            <option value="MA">MA - Maranhão</option>
+            <option value="MT">MT - Mato Grosso</option>
+            <option value="MS">MS - Mato Grosso do Sul</option>
+            <option value="MG">MG - Minas Gerais</option>
+            <option value="PA">PA - Pará</option>
+            <option value="PB">PB - Paraíba</option>
+            <option value="PR">PR - Paraná</option>
+            <option value="PE">PE - Pernambuco</option>
+            <option value="PI">PI - Piauí</option>
+            <option value="RJ">RJ - Rio de Janeiro</option>
+            <option value="RN">RN - Rio Grande do Norte</option>
+            <option value="RS">RS - Rio Grande do Sul</option>
+            <option value="RO">RO - Rondônia</option>
+            <option value="RR">RR - Roraima</option>
+            <option value="SC">SC - Santa Catarina</option>
+            <option value="SP">SP - São Paulo</option>
+            <option value="SE">SE - Sergipe</option>
+            <option value="TO">TO - Tocantins</option>
+          </select>
+        </label>
+        <label>Responsável<input id="responsavel"></label>
+        <label>Corretora<input id="corretora"></label>
+        <label>Vendedor<input id="vendedor"></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Informações da contratação</h2>
+      <div class="grid">
+        <label>Contratação
+          <select id="contratacao">
+            <option value="">Selecione</option>
+            <option value="compulsorio">Compulsório</option>
+            <option value="livre">Livre adesão</option>
+          </select>
+        </label>
+        <label>Modalidade
+          <select id="modalidade">
+            <option value="">Selecione</option>
+            <option value="empresarial">Col. Empresarial</option>
+            <option value="adesao">Col. por Adesão</option>
+          </select>
+        </label>
+        <label>Possui plano de saúde?
+          <select id="possuiPlano">
+            <option value="">Selecione</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+          </select>
+        </label>
+        <label>Operadora<input id="operadora"></label>
+        <label>Tempo de contrato<input id="tempoContrato"></label>
+        <label>Valor per capita<input id="valorPerCapita" inputmode="numeric" placeholder="R$ 0,00"></label>
+        <label>Vidas ativas<input id="vidasAtivas"></label>
+        <label>Valor última fatura<input id="ultimaFatura" inputmode="numeric" placeholder="R$ 0,00"></label>
+        <label>% último reajuste<input id="ultimoReajuste" inputmode="numeric" placeholder="0%"></label>
+        <label>Abrangência
+          <select id="abrangencia">
+            <option value="">Selecione</option>
+            <option value="municipal">Municipal</option>
+            <option value="estadual">Estadual</option>
+            <option value="nacional">Nacional</option>
+            <option value="regional">Regional</option>
+          </select>
+        </label>
+        <label>Motivo da mudança<input id="motivoMudanca"></label>
+        <label>% participação funcionários<input id="participacaoFuncionarios" inputmode="numeric" placeholder="0%"></label>
+        <label>Fonte pagadora<input id="fontePagadora"></label>
+        <label>Cobertura parto?
+          <select id="coberturaParto">
+            <option value="">Selecione</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="card perguntas-card">
+      <div class="section-title-row">
+        <h2>Perguntas adicionais</h2>
+        <span class="help-dot" title="Preencha as perguntas abaixo. Os campos de quantidade são vinculados à pergunta correspondente.">?</span>
+      </div>
+
+      <p class="section-help">Preencha os campos abaixo. Os campos de quantidade são relacionados diretamente à pergunta ao lado.</p>
+
+      <div class="perguntas-grid">
+        <div class="question-box">
+          <label>1. Vínculo empregatício/estatutário?
+            <select id="vinculo">
+              <option value="">Selecione</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="question-box">
+          <label>2. Afastamento por motivo de saúde?
+            <select id="afastamento" onchange="toggleQtd('afastamento','qtdAfastamento')">
+              <option value="">Selecione</option>
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="question-box qtd-box" data-qtd-for="afastamento">
+          <label>2.1 Quantos afastados por motivo de saúde?
+            <div class="qtd-input">
+              <span>QTD:</span>
+              <input id="qtdAfastamento" inputmode="numeric" placeholder="Ex.: 3" disabled>
+            </div>
+          </label>
+          <small>Preencha somente se a resposta for “Sim”.</small>
+        </div>
+
+        <div class="question-box">
+          <label>3. Parto programado?
+            <select id="partoProgramado" onchange="toggleQtd('partoProgramado','qtdParto')">
+              <option value="">Selecione</option>
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="question-box qtd-box" data-qtd-for="partoProgramado">
+          <label>3.1 Quantos partos programados?
+            <div class="qtd-input">
+              <span>QTD:</span>
+              <input id="qtdParto" inputmode="numeric" placeholder="Ex.: 1" disabled>
+            </div>
+          </label>
+          <small>Preencha somente se a resposta for “Sim”.</small>
+        </div>
+
+        <div class="question-box">
+          <label>4. Acompanhamento de obesidade mórbida?
+            <select id="obesidade" onchange="toggleQtd('obesidade','qtdObesidade')">
+              <option value="">Selecione</option>
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="question-box qtd-box" data-qtd-for="obesidade">
+          <label>4.1 Quantos em acompanhamento de obesidade mórbida?
+            <div class="qtd-input">
+              <span>QTD:</span>
+              <input id="qtdObesidade" inputmode="numeric" placeholder="Ex.: 2" disabled>
+            </div>
+          </label>
+          <small>Preencha somente se a resposta for “Sim”.</small>
+        </div>
+
+        <div class="question-box">
+          <label>5. Tratamento domiciliar (Home Care)?
+            <select id="homeCare" onchange="toggleQtd('homeCare','qtdHomeCare')">
+              <option value="">Selecione</option>
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="question-box qtd-box" data-qtd-for="homeCare">
+          <label>5.1 Quantos em tratamento domiciliar (Home Care)?
+            <div class="qtd-input">
+              <span>QTD:</span>
+              <input id="qtdHomeCare" inputmode="numeric" placeholder="Ex.: 2" disabled>
+            </div>
+          </label>
+          <small>Preencha somente se a resposta for “Sim”.</small>
+        </div>
+      </div>
+
+      <label class="full numbered-textarea">6. CIDs dos afastados e casos crônicos
+        <textarea id="cids" placeholder="Descreva os CIDs dos afastados e casos crônicos."></textarea>
+      </label>
+
+      <label class="full numbered-textarea">7. Distribuição das vidas por UF
+        <textarea id="distribuicaoUf" placeholder="Informe a distribuição das vidas por UF."></textarea>
+      </label>
+
+      <label class="full numbered-textarea">8. Sinistralidade dos últimos 2 anos, se já houver experiência
+        <textarea id="sinistralidade" placeholder="Descreva a sinistralidade dos últimos 2 anos, se já houver experiência."></textarea>
+      </label>
+
+      <label class="full numbered-textarea">9. Há possibilidade de entrevista médica dos casos crônicos?
+        <textarea id="entrevistaMedica" placeholder="Descreva se há possibilidade de entrevista médica dos casos crônicos."></textarea>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Proposta de valores</h2>
+      <div class="modo-valores">
+        <label>Modelo da proposta
+          <select id="modeloValores" onchange="alternarModeloValores()">
+            <option value="faixa">Valores por faixa etária</option>
+            <option value="linear">Valor linear</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="hint faixa-hint">O produto ONE aparece independente se há valores preenchidos. EVO NOW e NOW só aparecem se pelo menos um valor for preenchido.</p>
+      <p class="hint linear-hint hidden">No valor linear, serão exibidos produto, quantidade de vidas e preço linear.</p>
+
+      <div id="produtos"></div>
+      <div id="produtosLineares" class="hidden"></div>
+    </section>
+
+
+    <section class="card">
+      <h2>PDF base da proposta comercial</h2>
+      <p class="hint">Coloque o arquivo <strong>PROPOSTA COMERCIAL 20.05.2026.pdf</strong> dentro da pasta <code>assets</code>. Ao gerar, o site anexará o PDF preenchido ao final desse documento.</p>
+    </section>
+
+    <div class="actions">
+      <button class="secondary action-btn" onclick="limparFormulario()" type="button">🧹 Limpar conteúdo</button>
+      <button class="primary action-btn" onclick="gerarPDF()" type="button">📄 Gerar PDF preenchido</button>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
