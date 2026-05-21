@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gerador de Proposta EVO Saúde</title>
+  <title>Proposta comercial</title>
   <link rel="icon" type="image/svg+xml" href="./document-svgrepo-com.svg">
   <link rel="stylesheet" href="style.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -26,7 +26,7 @@
     <header class="header">
       <img src="logo.png" alt="EVO Saúde" />
       <div>
-        <h1>Gerador de Proposta EVO Saúde</h1>
+        <h1>Proposta comercial</h1>
         <p>Preencha os campos abaixo para gerar a proposta e anexá-la automaticamente ao PDF base da proposta comercial.</p>
       </div>
     </header>
@@ -248,20 +248,20 @@
 
     <section class="card">
       <h2>Proposta de valores</h2>
-      <div class="modo-valores">
-        <label>Modelo da proposta
-          <select id="modeloValores" onchange="alternarModeloValores()">
-            <option value="faixa">Valores por faixa etária</option>
-            <option value="linear">Valor linear</option>
-          </select>
-        </label>
-      </div>
-
-      <p class="hint faixa-hint">O produto ONE aparece independente se há valores preenchidos. EVO NOW e NOW só aparecem se pelo menos um valor for preenchido.</p>
+<p class="hint faixa-hint">O produto ONE aparece independente se há valores preenchidos. EVO NOW e NOW só aparecem se pelo menos um valor for preenchido.</p>
       <p class="hint linear-hint hidden">No valor linear, serão exibidos produto, quantidade de vidas e preço linear.</p>
 
       <div id="produtos"></div>
-      <div id="produtosLineares" class="hidden"></div>
+</section>
+
+
+
+    <section class="card">
+      <div class="section-title-row">
+        <h2>Responsável pela proposta</h2>
+      </div>
+      <p class="hint">Esse dado será exibido no final da página da tabela de coparticipação.</p>
+      <div id="responsaveisArea" class="responsaveis-area"></div>
     </section>
 
     <div class="actions">

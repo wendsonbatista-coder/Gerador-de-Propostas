@@ -1,13 +1,48 @@
 const faixas = ["00 a 18","19 a 23","24 a 28","29 a 33","34 a 38","39 a 43","44 a 48","49 a 53","54 a 58","59 acima"];
 
 const produtosConfig = [
-  {id:"one", nome:"ONE", titulo:"Plano ONE BSB CE - Enfermaria Regional com Coparticipação"},
-  {id:"evoNow", nome:"EVO NOW", titulo:"Plano EVO NOW - Enfermaria Regional com Coparticipação"},
-  {id:"now", nome:"NOW", titulo:"Plano NOW - Enfermaria Regional com Coparticipação"}
+  {id:"oneEnf", nome:"ONE ENF", titulo:"Plano ONE BSB CE - Enfermaria Regional com Coparticipação"},
+  {id:"oneApt", nome:"ONE APT", titulo:"Plano ONE - APT Regional com Coparticipação"},
+  {id:"evoNowEnf", nome:"EVO NOW ENF", titulo:"Plano EVO NOW - Enfermaria Regional com Coparticipação"},
+  {id:"evoNowApt", nome:"EVO NOW APT", titulo:"Plano EVO NOW - APT Regional com Coparticipação"},
+  {id:"nowEnf", nome:"NOW ENF", titulo:"Plano NOW - Enfermaria Regional com Coparticipação"},
+  {id:"nowApt", nome:"NOW APT", titulo:"Plano NOW - APT Regional com Coparticipação"}
 ];
+
+
+let totalResponsaveis = 0;
+function adicionarResponsavel(nome=""){
+  const area = document.getElementById("responsaveisArea");
+  if(!area) return;
+  area.innerHTML = "";
+  totalResponsaveis = 1;
+
+  const div = document.createElement("div");
+  div.className = "responsavel-row responsavel-row-single";
+  div.innerHTML = `
+    <label>Responsável
+      <input id="responsavelExtraNome0" value="${nome}" placeholder="Nome do responsável">
+    </label>
+  `;
+  area.appendChild(div);
+}
+function coletarResponsaveis(){
+  return Array.from(document.querySelectorAll(".responsavel-row")).map(row=>{
+    const input = row.querySelector("input");
+    return {nome:(input?.value||"").trim(), cargo:""};
+  }).filter(r=>r.nome);
+}
+document.addEventListener("DOMContentLoaded", ()=>{
+  if(document.getElementById("responsaveisArea")){
+    adicionarResponsavel();
+  }
+});
 
 function montarProdutos(){
   const area = document.getElementById("produtos");
+  if(!area) return;
+  area.innerHTML = "";
+
   produtosConfig.forEach(p=>{
     const div = document.createElement("div");
     div.className = "produto";
@@ -16,40 +51,32 @@ function montarProdutos(){
       <label>Título do plano
         <input id="${p.id}_titulo" value="${p.titulo}">
       </label>
+
       <div class="valores">
         ${faixas.map((f,i)=>`
           <label>${f}
             <input id="${p.id}_${i}" inputmode="numeric" placeholder="R$ 0,00">
           </label>
         `).join("")}
+      </div>
+
+      <div class="linear-inline linear-inline-simple">
+        <h4>Valor linear</h4>
+        <div class="grid linear-grid-one">
+          <label>Valor linear do plano
+            <input id="${p.id}_linear_valor" inputmode="numeric" placeholder="R$ 0,00">
+          </label>
+        </div>
+        <input type="hidden" id="${p.id}_linear_produto" value="${p.titulo}">
+        <input type="hidden" id="${p.id}_linear_vidas" value="">
       </div>`;
     area.appendChild(div);
   });
 }
 montarProdutos();
 
-function montarProdutosLineares(){
-  const area = document.getElementById("produtosLineares");
-  produtosConfig.forEach(p=>{
-    const div = document.createElement("div");
-    div.className = "produto";
-    div.innerHTML = `
-      <h3>${p.nome}</h3>
-      <label>Produto
-        <input id="${p.id}_linear_produto" value="${p.titulo}">
-      </label>
-      <div class="grid" style="margin-top:12px">
-        <label>Quantidade de vidas
-          <input id="${p.id}_linear_vidas" inputmode="numeric" placeholder="Ex.: 30">
-        </label>
-        <label>Preço linear
-          <input id="${p.id}_linear_valor" inputmode="numeric" placeholder="R$ 0,00">
-        </label>
-      </div>`;
-    area.appendChild(div);
-  });
-}
-montarProdutosLineares();
+function montarProdutosLineares(){ return; }
+
 
 
 const $ = id => (document.getElementById(id)?.value || "").trim();
@@ -267,11 +294,10 @@ function inicializarPerguntasAdicionais(){
 document.addEventListener("DOMContentLoaded", inicializarPerguntasAdicionais);
 
 function alternarModeloValores(){
-  const modo = $("modeloValores");
-  document.getElementById("produtos").classList.toggle("hidden", modo === "linear");
-  document.getElementById("produtosLineares").classList.toggle("hidden", modo !== "linear");
-  document.querySelector(".faixa-hint").classList.toggle("hidden", modo === "linear");
-  document.querySelector(".linear-hint").classList.toggle("hidden", modo !== "linear");
+  document.getElementById("produtos")?.classList.remove("hidden");
+  document.getElementById("produtosLineares")?.classList.add("hidden");
+  document.querySelector(".faixa-hint")?.classList.remove("hidden");
+  document.querySelector(".linear-hint")?.classList.add("hidden");
 }
 alternarModeloValores();
 
@@ -290,7 +316,7 @@ function limparFormulario(){
   });
   document.querySelectorAll("select").forEach(el=>{
     if(el.id === "estado") el.value = "DF";
-    else if(el.id === "modeloValores") el.value = "faixa";
+    
     else el.value = "";
   });
   const status = document.getElementById("cepStatus");
@@ -309,15 +335,49 @@ function limparFormulario(){
 }
 
 
-function produtoTemValor(id){
-  return faixas.some((_,i)=>$(`${id}_${i}`));
-}
+function produtoTemValor(id){ return true; }
 
 function produtoDados(id){
   return {
     titulo: $(`${id}_titulo`),
     valores: faixas.map((_,i)=>$(`${id}_${i}`))
   };
+}
+
+
+function produtoLinearDados(id){
+  return {
+    produto: $(`${id}_linear_produto`) || $(`${id}_titulo`),
+    vidas: "",
+    preco: $(`${id}_linear_valor`)
+  };
+}
+function drawValorLinearResumo(doc, id, x, y, w, h=7.2){
+  const d = produtoLinearDados(id);
+  const labelW = w * 0.46;
+  const valueW = w - labelW;
+
+  doc.setDrawColor(0,0,0);
+  doc.setLineWidth(0.25);
+  doc.rect(x, y, w, h);
+  doc.line(x + labelW, y, x + labelW, y + h);
+
+  doc.setFillColor(151,0,70);
+  doc.rect(x, y, labelW, h, "F");
+
+  doc.setTextColor(255,255,255);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(6.4);
+  doc.text("VALOR LINEAR:", x + labelW/2, y + 4.8, {align:"center"});
+
+  doc.setTextColor(0,0,0);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(6.3);
+  let valor = d.preco || "";
+  while(doc.getTextWidth(valor) > valueW - 4 && valor.length > 3){
+    valor = valor.slice(0, -1);
+  }
+  doc.text(valor, x + labelW + 2, y + 4.8);
 }
 
 function formatarValor(v){
@@ -422,9 +482,9 @@ function paginaFormulario(doc){
   let y = 55;
 
   // Título do formulário
-  doc.setFont("times","bold");
+  doc.setFont("helvetica","bold");
   doc.setFontSize(12);
-  doc.text("QUESTIONÁRIO PARA COTAÇÃO EMPRESARIAL",105,46,{align:"center"});
+  doc.text("PROPOSTA COMERCIAL",105,46,{align:"center"});
 
   // Bloco identificação
   y = 55;
@@ -593,7 +653,7 @@ function tabelaProduto(doc, produto, x, y, w, cfg){
     drawCentered(doc,t,x,y+cfg.titleY,w,cfg.titleSize,true);
   }else{
     const titLines = quebrar(titulo,cfg.titleChars).slice(0,2);
-    const lineGap = Math.min(cfg.titleSize + 0.8, 6.8);
+    const lineGap = Math.min(cfg.titleSize + 0.45, 5.2);
     titLines.forEach((l,i)=>drawCentered(doc,l,x,y+cfg.titleY+i*lineGap,w,cfg.titleSize,true));
   }
 
@@ -686,174 +746,195 @@ function wrapTextByChars(text, maxChars){
 }
 
 function tabelaCoparticipacao(doc, x, y, w){
-  const leftW = w * 0.62;
+  const leftW = w * 0.72;
   const rightW = w - leftW;
-  const headerH = 10;
-  const rowH = 9;
+  const headerH = 8;
 
-  doc.setDrawColor(0,0,0);
-  doc.setLineWidth(0.25);
-  doc.rect(x, y, w, headerH + (coparticipacaoLinhas.length * rowH));
-  doc.line(x + leftW, y, x + leftW, y + headerH + (coparticipacaoLinhas.length * rowH));
+  const linhasPreparadas = coparticipacaoLinhas.map(row => {
+    const procLines = wrapTextByChars(row[0], 48).slice(0,2);
+    const h = procLines.length > 1 ? 10.5 : 8.2;
+    return { row, procLines, h };
+  });
 
+  const totalH = headerH + linhasPreparadas.reduce((acc, item) => acc + item.h, 0);
+
+  doc.setFillColor(151,0,70);
+  doc.roundedRect(x, y, w, headerH, 2, 2, "F");
+
+  doc.setTextColor(255,255,255);
   doc.setFont("helvetica","bold");
   doc.setFontSize(8);
-  drawCentered(doc, "Procedimento", x, y + 6.8, leftW, 8, true);
-  drawCentered(doc, "Coparticipação", x + leftW, y + 6.8, rightW, 8, true);
+  doc.text("Procedimentos", x + 3, y + 5.4);
+  doc.text("Valores", x + leftW + (rightW/2), y + 5.4, {align:"center"});
 
-  doc.line(x, y + headerH, x + w, y + headerH);
+  doc.setTextColor(0,0,0);
 
-  coparticipacaoLinhas.forEach((row, i) => {
-    const yy = y + headerH + (i * rowH);
-    doc.line(x, yy + rowH, x + w, yy + rowH);
+  let yy = y + headerH;
+  linhasPreparadas.forEach((item, i) => {
+    if(i % 2 === 1){
+      doc.setFillColor(222,222,222);
+      doc.rect(x, yy, w, item.h, "F");
+    }
 
     doc.setFont("helvetica","normal");
-    doc.setFontSize(7.2);
-    const procLines = wrapTextByChars(row[0], 42).slice(0,2);
-    procLines.forEach((line, idx) => {
-      doc.text(line, x + 2, yy + 4 + (idx * 3.2));
+    doc.setFontSize(7.25);
+
+    item.procLines.forEach((line, idx) => {
+      doc.text(line, x + 3, yy + 4.6 + (idx * 3.2));
     });
 
-    drawCentered(doc, row[1], x + leftW, yy + 5.7, rightW, 7.2, false);
+    doc.text(item.row[1], x + leftW + (rightW/2), yy + (item.h/2) + 2, {align:"center"});
+    yy += item.h;
   });
+
+  doc.setDrawColor(151,0,70);
+  doc.setLineWidth(1.2);
+  doc.line(x, y + totalH + 3, x + w, y + totalH + 3);
+
+  return totalH;
 }
+
 
 function paginaValoresLinear(doc){
-  drawBase(doc);
-  doc.setFont("times","bold");
-  doc.setFontSize(12);
-  doc.text("PROPOSTA DE VALORES",105,40,{align:"center"});
-
-  const lista = [];
-  produtosConfig.forEach((p)=>{
-    const produto = document.getElementById(`${p.id}LinearProduto`)?.value || p.nome;
-    const vidas = document.getElementById(`${p.id}LinearVidas`)?.value || "";
-    const preco = document.getElementById(`${p.id}LinearValor`)?.value || "";
-    if(produto || vidas || preco){
-      lista.push({produto, vidas, preco});
-    }
-  });
-
-  const x = 39, w = 132;
-  let y = 72;
-
-  lista.slice(0,3).forEach((item)=>{
-    tabelaLinear(doc,item,x,y,w,9.5,6.8);
-    y += 31;
-  });
-
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(7);
-  doc.text("Validade da proposta: 30 dias.",65,230);
+  paginaValores(doc);
 }
+
+
 
 function paginaValores(doc){
   drawBase(doc);
-  doc.setFont("times","bold");
-  doc.setFontSize(12);
-  doc.text("PROPOSTA DE VALORES",105,40,{align:"center"});
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(13);
+  doc.text("PROPOSTA DE VALORES",105,39,{align:"center"});
 
-  const lista = [];
-  produtosConfig.forEach((p)=>{
-    if(produtoTemValor(p.id)) lista.push(produtoDados(p.id));
+  const lista = produtosConfig.map(p=>({id:p.id, ...produtoDados(p.id)}));
+
+  const cfg = {
+    titleH:8.8,
+    headerH:6.7,
+    rowH:3.95,
+    titleSize:5.95,
+    headerSize:6.0,
+    rowSize:5.7,
+    titleChars:48,
+    titleY:5.55,
+    headerY:4.95,
+    rowY:3.35
+  };
+
+  const colW = 84;
+  const leftX = 19;
+  const rightX = 107;
+  const rowsY = [45, 124, 203];
+
+  lista.forEach((item,i)=>{
+    const x = i % 2 === 0 ? leftX : rightX;
+    const y = rowsY[Math.floor(i/2)];
+
+    tabelaProduto(doc,item,x,y,colW,cfg);
+
+    const tabelaAltura = cfg.titleH + cfg.headerH + (faixas.length * cfg.rowH);
+    drawValorLinearResumo(doc,item.id,x,y + tabelaAltura + 1.1,colW,7.2);
   });
 
-  if(lista.length === 0){
-    lista.push(produtoDados("one"));
-  }
-
-  if(lista.length === 1){
-    tabelaProduto(doc, lista[0], 54, 58, 102, {
-      titleH:17,
-      headerH:9,
-      rowH:7.2,
-      titleSize:7.4,
-      headerSize:7.1,
-      rowSize:6.8,
-      titleChars:46,
-      titleY:6.5,
-      headerY:6.2,
-      rowY:5.2
-    });
-
-    doc.setFont("helvetica","bold");
-    doc.setFontSize(7);
-    doc.text("Validade da proposta: 30 dias.",65,207);
-
-  }else if(lista.length === 2){
-    const cfg = {
-      titleH:18,
-      headerH:8,
-      rowH:5.7,
-      titleSize:6.2,
-      headerSize:6.5,
-      rowSize:5.9,
-      titleChars:48,
-      titleY:6.8,
-      headerY:5.6,
-      rowY:4.3
-    };
-
-    tabelaProduto(doc, lista[0], 53, 48, 104, cfg);
-    tabelaProduto(doc, lista[1], 53, 137, 104, cfg);
-
-    doc.setFont("helvetica","bold");
-    doc.setFontSize(7);
-    doc.text("Validade da proposta: 30 dias.",65,231);
-
-  }else{
-    const cfg = {
-      titleH:8,
-      headerH:6,
-      rowH:5.1,
-      titleSize:5.6,
-      headerSize:5.8,
-      rowSize:5.6,
-      titleChars:62,
-      titleY:5.4,
-      headerY:4.5,
-      rowY:3.8
-    };
-
-    tabelaProduto(doc, lista[0], 53, 48, 104, cfg);
-    tabelaProduto(doc, lista[1], 53, 116, 104, cfg);
-    tabelaProduto(doc, lista[2], 53, 184, 104, cfg);
-
-    doc.setFont("helvetica","bold");
-    doc.setFontSize(6.7);
-    doc.text("Validade da proposta: 30 dias.",65,259);
-  }
+  // validade da proposta valores
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(7.8);
+  doc.setTextColor(151,0,70);
+  doc.text("Validade da proposta: 30 dias.",184,283,{align:"left"});
+  doc.setTextColor(0,0,0);
 }
+
+
 
 
 
 function paginaCoparticipacao(doc){
   drawBase(doc);
 
-  doc.setFont("times","bold");
-  doc.setFontSize(12);
-  doc.text("TABELA DE COPARTICIPAÇÃO",105,42,{align:"center"});
-
-  tabelaCoparticipacao(doc, 24, 58, 162);
-
   doc.setFont("helvetica","bold");
+  doc.setFontSize(13);
+  doc.text("COPARTICIPAÇÃO",105,42,{align:"center"});
+
+  const tabelaY = 56;
+  const tabelaH = tabelaCoparticipacao(doc, 34, tabelaY, 142);
+
+  // Bloco de observações visual mais limpo e sem sobreposição
+  const obsX = 24;
+  const obsY = tabelaY + tabelaH + 14;
+  const obsW = 162;
+  const obsH = 54;
+
+  doc.setFillColor(248,248,248);
+  doc.setDrawColor(151,0,70);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(obsX, obsY, obsW, obsH, 2, 2, "FD");
+
+  doc.setFillColor(151,0,70);
+  doc.rect(obsX, obsY, 4, obsH, "F");
+
+  doc.setTextColor(151,0,70);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(8.7);
+  doc.text("OBSERVAÇÕES", obsX + 9, obsY + 8);
+
+  doc.setDrawColor(151,0,70);
+  doc.setLineWidth(0.25);
+  doc.line(obsX + 9, obsY + 11, obsX + obsW - 8, obsY + 11);
+
+  doc.setTextColor(0,0,0);
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(8.5);
+
+  const obs = `Esta proposta foi elaborada com base nas informações fornecidas pelo proponente, considerando, para fins de precificação, a inexistência de funcionários afastados por doença, demitidos, aposentados ou beneficiários portadores de doenças crônicas, em tratamento, em uso contínuo de medicamentos ou submetidos a terapias. Ressalta-se que a veracidade, integridade e atualização das informações prestadas são de inteira responsabilidade do proponente. Caso seja identificada qualquer omissão, divergência ou inconsistência — independentemente do momento ou motivo — os valores e as condições desta proposta poderão ser revistos, mediante nova análise e reprecificação, inclusive após o início de sua vigência.`;
+  const obsLines = doc.splitTextToSize(obs, obsW - 18);
+  doc.text(obsLines.slice(0, 10), obsX + 9, obsY + 17, {
+    maxWidth: obsW - 18,
+    lineHeightFactor: 1.12
+  });
+
+  const hoje = new Date();
+  const dataFormatada = hoje.toLocaleDateString("pt-BR");
+  const cidadeRaw = $("cidade") || "Brasília";
+  const cidade = cidadeRaw
+    ? cidadeRaw.charAt(0).toUpperCase() + cidadeRaw.slice(1).toLowerCase()
+    : "Brasília";
+  const estado = $("estado") || "DF";
+
+  doc.setTextColor(0,0,0);
+  doc.setFont("helvetica","normal");
   doc.setFontSize(7);
-  doc.text("Validade da proposta: 30 dias.",24,250);
+
+  doc.text("DATA", 28, 258);
+  doc.line(28, 266, 80, 266);
+  doc.text(`${cidade} - ${estado}, ${dataFormatada}.`, 28, 264);
+
+  const responsaveis = coletarResponsaveis();
+  const resp = responsaveis[0]?.nome || "";
+
+  doc.text("RESPONSÁVEL", 128, 258);
+  doc.line(128, 266, 180, 266);
+  if(resp){
+    doc.setFont("helvetica","bold");
+    doc.text(resp, 154, 264, {align:"center"});
+  }
 }
+
 
 async function gerarPdfPropostaArrayBuffer(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({orientation:"portrait", unit:"mm", format:"a4", compress:true});
   paginaFormulario(doc);
   doc.addPage();
-  if($("modeloValores") === "linear") paginaValoresLinear(doc); else paginaValores(doc);
+  paginaValores(doc);
   doc.addPage();
   paginaCoparticipacao(doc);
   return doc.output("arraybuffer");
 }
 
 async function anexarAoPdfBase(propostaBuffer){
-  const basePath = "assets/PROPOSTA COMERCIAL 20.05.2026.pdf";
+  const basePath = "assets/PROPOSTA COMERCIAL.pdf";
+  const finalPath = "assets/PROPOSTA COMERCIAL tela final.pdf";
 
   const baseResponse = await fetch(basePath);
   if(!baseResponse.ok){
@@ -861,14 +942,22 @@ async function anexarAoPdfBase(propostaBuffer){
   }
 
   const baseBytes = await baseResponse.arrayBuffer();
-  const propostaBytes = propostaBuffer;
 
   const { PDFDocument } = window.PDFLib;
   const pdfBase = await PDFDocument.load(baseBytes);
-  const pdfProposta = await PDFDocument.load(propostaBytes);
+  const pdfProposta = await PDFDocument.load(propostaBuffer);
 
-  const copiedPages = await pdfBase.copyPages(pdfProposta, pdfProposta.getPageIndices());
-  copiedPages.forEach(page => pdfBase.addPage(page));
+  const propostaPages = await pdfBase.copyPages(pdfProposta, pdfProposta.getPageIndices());
+  propostaPages.forEach(page => pdfBase.addPage(page));
+
+  // Capa final opcional. Se o arquivo existir em assets, será anexado ao final.
+  const finalResponse = await fetch(finalPath);
+  if(finalResponse.ok){
+    const finalBytes = await finalResponse.arrayBuffer();
+    const pdfFinalPage = await PDFDocument.load(finalBytes);
+    const finalPages = await pdfBase.copyPages(pdfFinalPage, pdfFinalPage.getPageIndices());
+    finalPages.forEach(page => pdfBase.addPage(page));
+  }
 
   return await pdfBase.save();
 }
@@ -919,10 +1008,10 @@ async function gerarPDF(){
     console.error(error);
 
     if(error && error.message === "PDF_BASE_NAO_ENCONTRADO"){
-      alert('Não encontrei o arquivo "PROPOSTA COMERCIAL 20.05.2026.pdf" dentro da pasta assets. Adicione o PDF base e tente novamente.');
+      alert('Não encontrei o arquivo "PROPOSTA COMERCIAL" dentro da pasta assets. Adicione o PDF base e tente novamente.');
       return;
     }
 
-    alert("Não foi possível gerar o PDF final. Verifique se o PDF base está na pasta assets e tente novamente.");
+    alert("Não foi possível gerar o PDF final. Verifique se o PDF base está na pasta assets e tente novamente. A capa final deve estar como PROPOSTA COMERCIAL tela final.pdf.");
   }
 }
