@@ -1,12 +1,12 @@
 const faixas = ["00 a 18","19 a 23","24 a 28","29 a 33","34 a 38","39 a 43","44 a 48","49 a 53","54 a 58","59 acima"];
 
 const produtosConfig = [
-  {id:"oneEnf", nome:"ONE ENF", titulo:"Plano ONE BSB CE - Enfermaria Regional com Coparticipação"},
-  {id:"oneApt", nome:"ONE APT", titulo:"Plano ONE - APT Regional com Coparticipação"},
-  {id:"evoNowEnf", nome:"EVO NOW ENF", titulo:"Plano EVO NOW - Enfermaria Regional com Coparticipação"},
-  {id:"evoNowApt", nome:"EVO NOW APT", titulo:"Plano EVO NOW - APT Regional com Coparticipação"},
-  {id:"nowEnf", nome:"NOW ENF", titulo:"Plano NOW - Enfermaria Regional com Coparticipação"},
-  {id:"nowApt", nome:"NOW APT", titulo:"Plano NOW - APT Regional com Coparticipação"}
+  {id:"oneEnf", nome:"ONE BSB CE ENF - 502.864/25-7", produto:"ONE BSB CE ENF - 502.864/25-7", titulo:"Plano ONE BSB CE - Enfermaria Regional com Coparticipação"},
+  {id:"oneApt", nome:"ONE BSB CE AP. - 502.866/25-3", produto:"ONE BSB CE AP. - 502.866/25-3", titulo:"Plano ONE BSB CE - Apartamento Regional com Coparticipação"},
+  {id:"evoNowEnf", nome:"EVO NOW DF ENF. - 504.240/25-2", produto:"EVO NOW DF ENF. - 504.240/25-2", titulo:"Plano EVO NOW DF - Enfermaria Regional"},
+  {id:"evoNowApt", nome:"EVO NOW DF APT. - 504.243/25-7", produto:"EVO NOW DF APT. - 504.243/25-7", titulo:"Plano EVO NOW DF - Apartamento Regional"},
+  {id:"nowEnf", nome:"NOW CP ENF. REG. - 500.344/24-0", produto:"NOW CP ENF. REG. - 500.344/24-0", titulo:"Plano NOW - Enfermaria Regional com Coparticipação"},
+  {id:"nowApt", nome:"NOW CP APT. REG. - 500.347/24-4", produto:"NOW CP APT. REG. - 500.347/24-4", titulo:"Plano NOW - Apartamento Regional com Coparticipação"}
 ];
 
 
@@ -48,9 +48,14 @@ function montarProdutos(){
     div.className = "produto";
     div.innerHTML = `
       <h3>${p.nome}</h3>
-      <label>Título do plano
-        <input id="${p.id}_titulo" value="${p.titulo}">
-      </label>
+      <div class="grid produto-info-grid">
+        <label>Produto
+          <input id="${p.id}_produto" value="${p.produto || ""}" placeholder="Ex.: ONE BSB CE ENF - 502.864/25-7">
+        </label>
+        <label>Título do plano
+          <input id="${p.id}_titulo" value="${p.titulo}">
+        </label>
+      </div>
 
       <div class="valores">
         ${faixas.map((f,i)=>`
@@ -339,6 +344,7 @@ function produtoTemValor(id){ return true; }
 
 function produtoDados(id){
   return {
+    produto: $(`${id}_produto`),
     titulo: $(`${id}_titulo`),
     valores: faixas.map((_,i)=>$(`${id}_${i}`))
   };
@@ -401,6 +407,43 @@ function quebrar(texto, maxChars){
   }
   if(line) out.push(line);
   return out;
+}
+
+
+function textoJustificado(doc, texto, x, y, maxW, lineH, maxLines){
+  const words = String(texto || "").split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = [];
+
+  words.forEach(word => {
+    const test = [...current, word].join(" ");
+    if(doc.getTextWidth(test) > maxW && current.length){
+      lines.push(current);
+      current = [word];
+    }else{
+      current.push(word);
+    }
+  });
+  if(current.length) lines.push(current);
+
+  lines.slice(0, maxLines).forEach((lineWords, idx) => {
+    const isLast = idx === Math.min(lines.length, maxLines) - 1;
+    const yy = y + (idx * lineH);
+
+    if(lineWords.length === 1 || isLast){
+      doc.text(lineWords.join(" "), x, yy);
+      return;
+    }
+
+    const wordsWidth = lineWords.reduce((acc, word) => acc + doc.getTextWidth(word), 0);
+    const gap = (maxW - wordsWidth) / (lineWords.length - 1);
+    let xx = x;
+
+    lineWords.forEach((word, i) => {
+      doc.text(word, xx, yy);
+      xx += doc.getTextWidth(word) + gap;
+    });
+  });
 }
 
 function textoAjustado(doc, txt, x, y, maxW, size=7.8, bold=false){
@@ -622,7 +665,9 @@ function drawCentered(doc, text, x, y, w, size, bold=true){
 }
 
 function tabelaProduto(doc, produto, x, y, w, cfg){
-  const titleH = cfg.titleH, headerH = cfg.headerH, rowH = cfg.rowH;
+  
+  const produtoNome = produto.produto || "";
+const titleH = cfg.titleH, headerH = cfg.headerH, rowH = cfg.rowH;
   const leftW = w/2, h = titleH + headerH + rowH*10;
 
   doc.setDrawColor(0,0,0);
@@ -652,9 +697,13 @@ function tabelaProduto(doc, produto, x, y, w, cfg){
     }
     drawCentered(doc,t,x,y+cfg.titleY,w,cfg.titleSize,true);
   }else{
-    const titLines = quebrar(titulo,cfg.titleChars).slice(0,2);
+    if(produtoNome){
+      drawCentered(doc, produtoNome, x, y + 2.8, w, Math.max(cfg.titleSize - 0.35, 4.8), true);
+    }
+    const titLines = quebrar(titulo,cfg.titleChars).slice(0, produtoNome ? 1 : 2);
     const lineGap = Math.min(cfg.titleSize + 0.45, 5.2);
-    titLines.forEach((l,i)=>drawCentered(doc,l,x,y+cfg.titleY+i*lineGap,w,cfg.titleSize,true));
+    const tituloY = produtoNome ? y + cfg.titleY + 2.1 : y + cfg.titleY;
+    titLines.forEach((l,i)=>drawCentered(doc,l,x,tituloY+i*lineGap,w,cfg.titleSize,true));
   }
 
   doc.setTextColor(255,255,255);
@@ -813,10 +862,10 @@ function paginaValores(doc){
     titleH:8.8,
     headerH:6.7,
     rowH:3.95,
-    titleSize:5.95,
-    headerSize:6.0,
-    rowSize:5.7,
-    titleChars:48,
+    titleSize:5.55,
+    headerSize:5.9,
+    rowSize:5.6,
+    titleChars:56,
     titleY:5.55,
     headerY:4.95,
     rowY:3.35
@@ -837,12 +886,22 @@ function paginaValores(doc){
     drawValorLinearResumo(doc,item.id,x,y + tabelaAltura + 1.1,colW,7.2);
   });
 
-  // validade da proposta valores
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(7.8);
+  // Validade da proposta dentro da área útil, acima do rodapé
+  const validadeX = 128;
+  const validadeY = 268;
+  const validadeW = 58;
+  const validadeH = 8;
+
+  doc.setDrawColor(151,0,70);
+  doc.setLineWidth(0.25);
+  doc.roundedRect(validadeX, validadeY, validadeW, validadeH, 1.5, 1.5);
+
   doc.setTextColor(151,0,70);
-  doc.text("Validade da proposta: 30 dias.",184,283,{align:"left"});
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(6.8);
+  doc.text("Validade da proposta: 30 dias.", validadeX + validadeW / 2, validadeY + 5.2, {align:"center"});
   doc.setTextColor(0,0,0);
+
 }
 
 
@@ -887,11 +946,7 @@ function paginaCoparticipacao(doc){
   doc.setFontSize(8.5);
 
   const obs = `Esta proposta foi elaborada com base nas informações fornecidas pelo proponente, considerando, para fins de precificação, a inexistência de funcionários afastados por doença, demitidos, aposentados ou beneficiários portadores de doenças crônicas, em tratamento, em uso contínuo de medicamentos ou submetidos a terapias. Ressalta-se que a veracidade, integridade e atualização das informações prestadas são de inteira responsabilidade do proponente. Caso seja identificada qualquer omissão, divergência ou inconsistência — independentemente do momento ou motivo — os valores e as condições desta proposta poderão ser revistos, mediante nova análise e reprecificação, inclusive após o início de sua vigência.`;
-  const obsLines = doc.splitTextToSize(obs, obsW - 18);
-  doc.text(obsLines.slice(0, 10), obsX + 9, obsY + 17, {
-    maxWidth: obsW - 18,
-    lineHeightFactor: 1.12
-  });
+  textoJustificado(doc, obs, obsX + 9, obsY + 17, obsW - 18, 4.2, 10);
 
   const hoje = new Date();
   const dataFormatada = hoje.toLocaleDateString("pt-BR");

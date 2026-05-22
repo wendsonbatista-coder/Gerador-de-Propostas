@@ -563,3 +563,18 @@ body.dark .linear-inline{
 .responsavel-row-single{
   grid-template-columns:1fr!important;
 }
+
+
+.produto-info-grid{
+  grid-template-columns:1fr 2fr;
+  margin-bottom:12px;
+}
+@media(max-width:900px){
+  .produto-info-grid{grid-template-columns:1fr}
+}
+
+
+.produto h3{
+  line-height:1.25;
+  word-break:normal;
+}
