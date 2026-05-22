@@ -578,3 +578,117 @@ body.dark .linear-inline{
   line-height:1.25;
   word-break:normal;
 }
+
+
+.historico-card{
+  overflow:hidden;
+}
+.historico-title-row{
+  justify-content:space-between;
+  align-items:flex-start;
+}
+.historico-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.small-action{
+  width:auto;
+  padding:10px 12px;
+  font-size:13px;
+  border-radius:10px;
+}
+.danger{
+  border:1px solid #b42318;
+  color:#b42318;
+  background:#fff;
+  border-radius:10px;
+  padding:10px 12px;
+  font-weight:800;
+  cursor:pointer;
+}
+.danger:hover{
+  background:#fff1f0;
+}
+.historico-resumo{
+  margin:12px 0;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fbfcff;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:700;
+}
+.historico-table-wrap{
+  width:100%;
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:14px;
+}
+.historico-table{
+  width:100%;
+  min-width:880px;
+  border-collapse:collapse;
+  background:#fff;
+}
+.historico-table th{
+  background:var(--evo);
+  color:#fff;
+  text-align:left;
+  padding:11px 10px;
+  font-size:12px;
+  white-space:nowrap;
+}
+.historico-table td{
+  border-top:1px solid var(--line);
+  padding:10px;
+  font-size:12px;
+  max-width:190px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.table-btn{
+  padding:7px 9px;
+  font-size:11px;
+  border-radius:8px;
+  margin-right:5px;
+}
+body.dark .historico-resumo,
+body.dark .historico-table{
+  background:var(--surface);
+}
+body.dark .danger{
+  background:var(--surface);
+}
+@media(max-width:900px){
+  .historico-title-row{
+    flex-direction:column;
+  }
+  .historico-actions{
+    width:100%;
+  }
+  .small-action,
+  .danger{
+    width:100%;
+  }
+}
+
+
+.historico-editando{
+  border-color:var(--evo)!important;
+  background:#fff4f8!important;
+  color:var(--evo)!important;
+}
+.flash-edit{
+  animation:flashEdit .85s ease both;
+}
+@keyframes flashEdit{
+  0%{box-shadow:0 0 0 0 rgba(151,0,70,.0)}
+  35%{box-shadow:0 0 0 5px rgba(151,0,70,.16)}
+  100%{box-shadow:var(--shadow-soft)}
+}
+body.dark .historico-editando{
+  background:rgba(151,0,70,.18)!important;
+}

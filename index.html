@@ -264,6 +264,37 @@
       <div id="responsaveisArea" class="responsaveis-area"></div>
     </section>
 
+
+    <section class="card historico-card">
+      <div class="section-title-row historico-title-row">
+        <div>
+          <h2>Histórico local de propostas</h2>
+          <p class="hint">As propostas geradas ficam salvas apenas neste navegador. Use Editar para carregar uma proposta novamente no formulário.</p>
+        </div>
+        <div class="historico-actions">
+          <button type="button" class="secondary small-action" onclick="exportarHistorico()">Exportar histórico</button>
+          <button type="button" class="danger small-action" onclick="limparHistorico()">Limpar histórico</button>
+        </div>
+      </div>
+      <div class="historico-resumo" id="historicoResumo">Nenhuma proposta registrada.</div>
+      <div class="historico-table-wrap">
+        <table class="historico-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Razão Social</th>
+              <th>CNPJ</th>
+              <th>Corretora</th>
+              <th>Vendedor</th>
+              <th>Arquivo</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="historicoBody"></tbody>
+        </table>
+      </div>
+    </section>
+
     <div class="actions">
       <button class="secondary action-btn" onclick="limparFormulario()" type="button">🧹 Limpar conteúdo</button>
       <button class="primary action-btn" onclick="gerarPDF()" type="button">📄 Gerar PDF preenchido</button>

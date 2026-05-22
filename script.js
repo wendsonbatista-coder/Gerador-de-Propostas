@@ -84,6 +84,242 @@ function montarProdutosLineares(){ return; }
 
 
 
+
+const HISTORICO_KEY = "evoHistoricoPropostas";
+
+function obterHistorico(){
+  try{
+    return JSON.parse(localStorage.getItem(HISTORICO_KEY) || "[]");
+  }catch(e){
+    return [];
+  }
+}
+
+function salvarHistorico(lista){
+  localStorage.setItem(HISTORICO_KEY, JSON.stringify(lista));
+}
+
+
+function coletarSnapshotFormulario(){
+  const snapshot = {};
+  document.querySelectorAll("input, select, textarea").forEach(el=>{
+    if(!el.id) return;
+    if(el.type === "checkbox") snapshot[el.id] = el.checked;
+    else snapshot[el.id] = el.value;
+  });
+  return snapshot;
+}
+
+function aplicarSnapshotFormulario(snapshot){
+  if(!snapshot) return;
+
+  Object.entries(snapshot).forEach(([id, value])=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+
+    if(el.type === "checkbox") el.checked = Boolean(value);
+    else el.value = value ?? "";
+  });
+
+  // Reaplica comportamentos visuais e dependências após carregar os dados.
+  alternarModeloValores();
+  inicializarPerguntasAdicionais();
+
+  [["afastamento","qtdAfastamento"],["partoProgramado","qtdParto"],["obesidade","qtdObesidade"],["homeCare","qtdHomeCare"]].forEach(([selectId,inputId])=>{
+    toggleQtd(selectId,inputId);
+  });
+
+  document.querySelectorAll(".card").forEach(card=>{
+    card.classList.add("flash-edit");
+    setTimeout(()=>card.classList.remove("flash-edit"), 850);
+  });
+}
+
+function resumoValoresPreenchidos(){
+  let totalFaixas = 0;
+  let totalLinear = 0;
+
+  produtosConfig.forEach(p=>{
+    faixas.forEach((_,i)=>{
+      if($(`${p.id}_${i}`)) totalFaixas++;
+    });
+    if($(`${p.id}_linear_valor`)) totalLinear++;
+  });
+
+  return {totalFaixas, totalLinear};
+}
+
+function registrarHistorico(nomeArquivo){
+  const { totalFaixas, totalLinear } = resumoValoresPreenchidos();
+
+  const registro = {
+    id: Date.now(),
+    dataISO: new Date().toISOString(),
+    data: new Date().toLocaleString("pt-BR"),
+    razaoSocial: $("razaoSocial") || "Não informado",
+    cnpj: $("cnpj") || "Não informado",
+    corretora: $("corretora") || "Não informado",
+    vendedor: $("vendedor") || "Não informado",
+    responsavel: $("responsavel") || "",
+    cidade: $("cidade") || "",
+    estado: $("estado") || "",
+    arquivo: nomeArquivo || nomeArquivoFinal(),
+    valoresFaixaPreenchidos: totalFaixas,
+    valoresLinearesPreenchidos: totalLinear,
+    snapshot: coletarSnapshotFormulario()
+  };
+
+  const historico = obterHistorico();
+  historico.unshift(registro);
+  salvarHistorico(historico.slice(0,100));
+  renderizarHistorico();
+}
+
+function renderizarHistorico(){
+  const body = document.getElementById("historicoBody");
+  const resumo = document.getElementById("historicoResumo");
+  if(!body || !resumo) return;
+
+  const historico = obterHistorico();
+  body.innerHTML = "";
+
+  if(!historico.length){
+    resumo.textContent = "Nenhuma proposta registrada.";
+    return;
+  }
+
+  resumo.textContent = `${historico.length} proposta(s) registrada(s) neste navegador.`;
+
+  historico.forEach(item=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${item.data || ""}</td>
+      <td title="${item.razaoSocial || ""}">${item.razaoSocial || ""}</td>
+      <td>${item.cnpj || ""}</td>
+      <td title="${item.corretora || ""}">${item.corretora || ""}</td>
+      <td title="${item.vendedor || ""}">${item.vendedor || ""}</td>
+      <td title="${item.arquivo || ""}">${item.arquivo || ""}</td>
+      <td>
+        <button type="button" class="mini-btn table-btn" onclick="editarHistorico(${item.id})">Editar</button>
+        <button type="button" class="mini-btn table-btn" onclick="verDetalhesHistorico(${item.id})">Ver</button>
+        <button type="button" class="remove-btn table-btn" onclick="removerHistorico(${item.id})">Excluir</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+
+function editarHistorico(id){
+  const item = obterHistorico().find(i=>i.id === id);
+  if(!item){
+    alert("Registro não encontrado.");
+    return;
+  }
+
+  if(!item.snapshot){
+    alert("Este registro foi gerado antes da função de edição e não possui dados completos para carregar.");
+    return;
+  }
+
+  aplicarSnapshotFormulario(item.snapshot);
+
+  window.scrollTo({top:0, behavior:"smooth"});
+
+  const resumo = document.getElementById("historicoResumo");
+  if(resumo){
+    resumo.textContent = `Proposta de ${item.razaoSocial || "registro selecionado"} carregada para edição. Após ajustar, gere o PDF novamente.`;
+    resumo.classList.add("historico-editando");
+    setTimeout(()=>resumo.classList.remove("historico-editando"), 3500);
+  }
+}
+
+
+function verDetalhesHistorico(id){
+  const item = obterHistorico().find(i=>i.id === id);
+  if(!item) return;
+
+  alert(
+    `Proposta gerada\n\n` +
+    `Data: ${item.data}\n` +
+    `Razão Social: ${item.razaoSocial}\n` +
+    `CNPJ: ${item.cnpj}\n` +
+    `Corretora: ${item.corretora}\n` +
+    `Vendedor: ${item.vendedor}\n` +
+    `Responsável: ${item.responsavel || "Não informado"}\n` +
+    `Cidade/UF: ${[item.cidade,item.estado].filter(Boolean).join(" - ") || "Não informado"}\n` +
+    `Arquivo: ${item.arquivo}\n` +
+    `Valores por faixa preenchidos: ${item.valoresFaixaPreenchidos}\n` +
+    `Valores lineares preenchidos: ${item.valoresLinearesPreenchidos}`
+  );
+}
+
+function removerHistorico(id){
+  if(!confirm("Deseja excluir este registro do histórico local?")) return;
+  salvarHistorico(obterHistorico().filter(i=>i.id !== id));
+  renderizarHistorico();
+}
+
+function limparHistorico(){
+  if(!confirm("Deseja apagar todo o histórico local de propostas?")) return;
+  localStorage.removeItem(HISTORICO_KEY);
+  renderizarHistorico();
+}
+
+function exportarHistorico(){
+  const historico = obterHistorico();
+  if(!historico.length){
+    alert("Não há histórico para exportar.");
+    return;
+  }
+
+  const headers = [
+    "Data",
+    "Razao Social",
+    "CNPJ",
+    "Corretora",
+    "Vendedor",
+    "Responsavel",
+    "Cidade",
+    "Estado",
+    "Arquivo",
+    "Valores por faixa preenchidos",
+    "Valores lineares preenchidos",
+    "Editavel"
+  ];
+
+  const linhas = historico.map(item=>[
+    item.data,
+    item.razaoSocial,
+    item.cnpj,
+    item.corretora,
+    item.vendedor,
+    item.responsavel,
+    item.cidade,
+    item.estado,
+    item.arquivo,
+    item.valoresFaixaPreenchidos,
+    item.valoresLinearesPreenchidos,
+    item.snapshot ? "Sim" : "Não"
+  ]);
+
+  const csv = [headers, ...linhas].map(row =>
+    row.map(v => `"${String(v ?? "").replace(/"/g,'""')}"`).join(";")
+  ).join("\n");
+
+  const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "historico-propostas-evo.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1200);
+}
+
+document.addEventListener("DOMContentLoaded", renderizarHistorico);
+
 const $ = id => (document.getElementById(id)?.value || "").trim();
 
 function showLoading(text="Processando..."){
@@ -1057,7 +1293,9 @@ async function gerarPDF(){
     const pdfFinal = await anexarAoPdfBase(propostaBuffer);
 
     hideLoading();
-    baixarBlobPdf(pdfFinal, nomeArquivoFinal());
+    const nomeFinal = nomeArquivoFinal();
+    baixarBlobPdf(pdfFinal, nomeFinal);
+    registrarHistorico(nomeFinal);
   }catch(error){
     hideLoading();
     console.error(error);
