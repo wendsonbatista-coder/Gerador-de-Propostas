@@ -1,6 +1,8 @@
 const faixas = ["00 a 18","19 a 23","24 a 28","29 a 33","34 a 38","39 a 43","44 a 48","49 a 53","54 a 58","59 acima"];
 
-const produtosConfig = [
+const OBSERVACOES_COPARTICIPACAO_PADRAO = `Esta proposta foi elaborada com base nas informações fornecidas pelo proponente, considerando, para fins de precificação, a inexistência de funcionários afastados por doença, demitidos, aposentados ou beneficiários portadores de doenças crônicas, em tratamento, em uso contínuo de medicamentos ou submetidos a terapias. Ressalta-se que a veracidade, integridade e atualização das informações prestadas são de inteira responsabilidade do proponente. Caso seja identificada qualquer omissão, divergência ou inconsistência — independentemente do momento ou motivo — os valores e as condições desta proposta poderão ser revistos, mediante nova análise e reprecificação, inclusive após o início de sua vigência.`;
+
+const produtosPadraoConfig = [
   {id:"oneEnf", nome:"ONE BSB CE ENF - 502.864/25-7", produto:"ONE BSB CE ENF - 502.864/25-7", titulo:"Plano ONE BSB CE - Enfermaria Regional com Coparticipação"},
   {id:"oneApt", nome:"ONE BSB CE AP. - 502.866/25-3", produto:"ONE BSB CE AP. - 502.866/25-3", titulo:"Plano ONE BSB CE - Apartamento Regional com Coparticipação"},
   {id:"evoNowEnf", nome:"EVO NOW DF ENF. - 504.240/25-2", produto:"EVO NOW DF ENF. - 504.240/25-2", titulo:"Plano EVO NOW DF - Enfermaria Regional"},
@@ -9,34 +11,64 @@ const produtosConfig = [
   {id:"nowApt", nome:"NOW CP APT. REG. - 500.347/24-4", produto:"NOW CP APT. REG. - 500.347/24-4", titulo:"Plano NOW - Apartamento Regional com Coparticipação"}
 ];
 
+const produtosUberabaConfig = [
+  {id:"uberabaApt", nome:"EVO NOW MG CE CP APT - 504.919/25-0", produto:"EVO NOW MG CE CP APT - 504.919/25-0", titulo:"Plano EVO NOW MG CE CP - Apartamento"},
+  {id:"uberabaEnf", nome:"EVO NOW MG CE CP ENF - 504.916.25-4", produto:"EVO NOW MG CE CP ENF - 504.916.25-4", titulo:"Plano EVO NOW MG CE CP - Enfermaria"}
+];
 
-let totalResponsaveis = 0;
-function adicionarResponsavel(nome=""){
-  const area = document.getElementById("responsaveisArea");
-  if(!area) return;
-  area.innerHTML = "";
-  totalResponsaveis = 1;
+let produtosConfig = produtosPadraoConfig;
 
-  const div = document.createElement("div");
-  div.className = "responsavel-row responsavel-row-single";
-  div.innerHTML = `
-    <label>Responsável
-      <input id="responsavelExtraNome0" value="${nome}" placeholder="Nome do responsável">
-    </label>
-  `;
-  area.appendChild(div);
+function isUberaba(){
+  return document.getElementById("modoUberaba")?.checked === true;
 }
-function coletarResponsaveis(){
-  return Array.from(document.querySelectorAll(".responsavel-row")).map(row=>{
-    const input = row.querySelector("input");
-    return {nome:(input?.value||"").trim(), cargo:""};
-  }).filter(r=>r.nome);
-}
-document.addEventListener("DOMContentLoaded", ()=>{
-  if(document.getElementById("responsaveisArea")){
-    adicionarResponsavel();
+
+function atualizarModeloProposta(){
+  produtosConfig = isUberaba() ? produtosUberabaConfig : produtosPadraoConfig;
+  montarProdutos();
+  aplicarMascarasProdutos();
+
+  const hint = document.getElementById("modeloPropostaHint");
+  if(hint){
+    hint.textContent = isUberaba()
+      ? "Modelo Uberaba ativo. O formulário exibirá somente EVO NOW MG CE CP APT e EVO NOW MG CE CP ENF, com a tabela de coparticipação de Uberaba e anexos próprios."
+      : "Modelo padrão ativo. Serão exibidos os planos padrão da proposta comercial.";
   }
+
+  const produtosHint = document.getElementById("produtosHint");
+  if(produtosHint){
+    produtosHint.textContent = isUberaba()
+      ? "Modelo Uberaba: preencha valores somente para EVO NOW MG CE CP APT e/ou EVO NOW MG CE CP ENF. Planos sem valores não serão exibidos no PDF."
+      : "Somente os planos com valores preenchidos serão exibidos no documento gerado.";
+  }
+}
+
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  atualizarModeloProposta();
+  inicializarObservacaoCoparticipacao();
 });
+
+function inicializarObservacaoCoparticipacao(){
+  const campo = document.getElementById("observacoesCoparticipacao");
+  if(campo && !campo.value.trim()){
+    campo.value = OBSERVACOES_COPARTICIPACAO_PADRAO;
+  }
+
+  const responsavel = document.getElementById("responsavelCoparticipacao");
+  if(responsavel && !responsavel.value.trim()){
+    responsavel.value = "Regina Salgado";
+  }
+}
+
+function restaurarObservacaoCoparticipacao(){
+  const campo = document.getElementById("observacoesCoparticipacao");
+  if(campo){
+    campo.value = OBSERVACOES_COPARTICIPACAO_PADRAO;
+    campo.focus();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", inicializarObservacaoCoparticipacao);
 
 function montarProdutos(){
   const area = document.getElementById("produtos");
@@ -113,6 +145,12 @@ function coletarSnapshotFormulario(){
 function aplicarSnapshotFormulario(snapshot){
   if(!snapshot) return;
 
+  const modoUberaba = document.getElementById("modoUberaba");
+  if(modoUberaba && Object.prototype.hasOwnProperty.call(snapshot, "modoUberaba")){
+    modoUberaba.checked = Boolean(snapshot.modoUberaba);
+    atualizarModeloProposta();
+  }
+
   Object.entries(snapshot).forEach(([id, value])=>{
     const el = document.getElementById(id);
     if(!el) return;
@@ -121,9 +159,19 @@ function aplicarSnapshotFormulario(snapshot){
     else el.value = value ?? "";
   });
 
+  atualizarModeloProposta();
+
+  Object.entries(snapshot).forEach(([id, value])=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(el.type === "checkbox") el.checked = Boolean(value);
+    else el.value = value ?? "";
+  });
+
   // Reaplica comportamentos visuais e dependências após carregar os dados.
   alternarModeloValores();
   inicializarPerguntasAdicionais();
+  toggleOperadora();
 
   [["afastamento","qtdAfastamento"],["partoProgramado","qtdParto"],["obesidade","qtdObesidade"],["homeCare","qtdHomeCare"]].forEach(([selectId,inputId])=>{
     toggleQtd(selectId,inputId);
@@ -160,7 +208,6 @@ function registrarHistorico(nomeArquivo){
     cnpj: $("cnpj") || "Não informado",
     corretora: $("corretora") || "Não informado",
     vendedor: $("vendedor") || "Não informado",
-    responsavel: $("responsavel") || "",
     cidade: $("cidade") || "",
     estado: $("estado") || "",
     arquivo: nomeArquivo || nomeArquivoFinal(),
@@ -246,7 +293,6 @@ function verDetalhesHistorico(id){
     `CNPJ: ${item.cnpj}\n` +
     `Corretora: ${item.corretora}\n` +
     `Vendedor: ${item.vendedor}\n` +
-    `Responsável: ${item.responsavel || "Não informado"}\n` +
     `Cidade/UF: ${[item.cidade,item.estado].filter(Boolean).join(" - ") || "Não informado"}\n` +
     `Arquivo: ${item.arquivo}\n` +
     `Valores por faixa preenchidos: ${item.valoresFaixaPreenchidos}\n` +
@@ -279,7 +325,6 @@ function exportarHistorico(){
     "CNPJ",
     "Corretora",
     "Vendedor",
-    "Responsavel",
     "Cidade",
     "Estado",
     "Arquivo",
@@ -294,7 +339,6 @@ function exportarHistorico(){
     item.cnpj,
     item.corretora,
     item.vendedor,
-    item.responsavel,
     item.cidade,
     item.estado,
     item.arquivo,
@@ -478,6 +522,8 @@ function formatarPercentual(v){
 }
 
 function aplicarMascaraMoeda(el){
+  if(!el || el.dataset.maskMoeda === "1") return;
+  el.dataset.maskMoeda = "1";
   el.addEventListener("input", () => {
     el.value = formatarMoedaBR(el.value);
   });
@@ -502,14 +548,35 @@ function aplicarMascaras(){
     });
   });
 
+  aplicarMascarasProdutos();
+}
+
+function aplicarMascarasProdutos(){
   produtosConfig.forEach(p=>{
     faixas.forEach((_,i)=>aplicarMascaraMoeda(document.getElementById(`${p.id}_${i}`)));
     aplicarMascaraMoeda(document.getElementById(`${p.id}_linear_valor`));
     const vidas = document.getElementById(`${p.id}_linear_vidas`);
-    vidas?.addEventListener("input", () => vidas.value = somenteDigitos(vidas.value));
+    if(vidas && vidas.dataset.maskNumero !== "1"){
+      vidas.dataset.maskNumero = "1";
+      vidas.addEventListener("input", () => vidas.value = somenteDigitos(vidas.value));
+    }
   });
 }
 aplicarMascaras();
+
+function toggleOperadora(){
+  const select = document.getElementById("possuiPlano");
+  const input = document.getElementById("operadora");
+  const wrap = document.getElementById("operadoraWrap") || input?.closest("label");
+  if(!select || !wrap) return;
+
+  const ativo = Boolean(select.value);
+  wrap.classList.toggle("hidden", !ativo);
+  if(input){
+    input.disabled = !ativo;
+    if(!ativo) input.value = "";
+  }
+}
 
 
 function toggleQtd(selectId, inputId){
@@ -522,7 +589,10 @@ function toggleQtd(selectId, inputId){
   if(!ativo) input.value = "";
 
   const box = document.querySelector(`[data-qtd-for="${selectId}"]`);
-  if(box) box.classList.toggle("qtd-active", ativo);
+  if(box){
+    box.classList.toggle("qtd-active", ativo);
+    box.classList.toggle("hidden", !ativo);
+  }
 }
 
 function inicializarPerguntasAdicionais(){
@@ -532,7 +602,10 @@ function inicializarPerguntasAdicionais(){
     input?.addEventListener("input", () => input.value = somenteDigitos(input.value));
   });
 }
-document.addEventListener("DOMContentLoaded", inicializarPerguntasAdicionais);
+document.addEventListener("DOMContentLoaded", () => {
+  inicializarPerguntasAdicionais();
+  toggleOperadora();
+});
 
 function alternarModeloValores(){
   document.getElementById("produtos")?.classList.remove("hidden");
@@ -571,12 +644,23 @@ function limparFormulario(){
     cnpjStatus.textContent = "";
     cnpjStatus.className = "";
   }
+
+  const obsCoparticipacao = document.getElementById("observacoesCoparticipacao");
+  if(obsCoparticipacao){
+    obsCoparticipacao.value = OBSERVACOES_COPARTICIPACAO_PADRAO;
+  }
+
   alternarModeloValores();
   inicializarPerguntasAdicionais();
+  toggleOperadora();
 }
 
 
-function produtoTemValor(id){ return true; }
+function produtoTemValor(id){
+  const temFaixa = faixas.some((_,i)=>$(`${id}_${i}`));
+  const temLinear = $(`${id}_linear_valor`);
+  return Boolean(temFaixa || temLinear);
+}
 
 function produtoDados(id){
   return {
@@ -682,6 +766,29 @@ function textoJustificado(doc, texto, x, y, maxW, lineH, maxLines){
   });
 }
 
+function textoComQuebrasManuais(doc, texto, x, y, maxW, lineH, maxLines){
+  const paragrafos = String(texto || "").replace(/\r\n/g, "\n").split("\n");
+  let linhasUsadas = 0;
+  let cursorY = y;
+
+  for(const paragrafo of paragrafos){
+    if(linhasUsadas >= maxLines) break;
+
+    if(!paragrafo.trim()){
+      cursorY += lineH;
+      linhasUsadas++;
+      continue;
+    }
+
+    const linhas = doc.splitTextToSize(paragrafo.trim(), maxW);
+    for(const linha of linhas){
+      if(linhasUsadas >= maxLines) break;
+      doc.text(linha, x, cursorY);
+      cursorY += lineH;
+      linhasUsadas++;
+    }
+  }
+}
 function textoAjustado(doc, txt, x, y, maxW, size=7.8, bold=false){
   if(!txt) return;
   doc.setFont("helvetica", bold ? "bold" : "normal");
@@ -777,9 +884,8 @@ function paginaFormulario(doc){
   rotuloValor(doc,"ESTADO:",$("estado"),x+114,y,62,7,18); 
   y+=7;
 
-  rotuloValor(doc,"RESPONSÁVEL:",$("responsavel"),x,y,62,7,30);
-  rotuloValor(doc,"CORRETORA:",$("corretora"),x+62,y,57,7,25);
-  rotuloValor(doc,"VENDEDOR:",$("vendedor"),x+119,y,57,7,24); 
+  rotuloValor(doc,"CORRETORA:",$("corretora"),x,y,88,7,35);
+  rotuloValor(doc,"VENDEDOR:",$("vendedor"),x+88,y,88,7,35); 
   y+=15;
 
   // Bloco contratação
@@ -1000,7 +1106,7 @@ function tabelaLinear(doc, item, x, y, w, rowH, fontSize){
 }
 
 
-const coparticipacaoLinhas = [
+const coparticipacaoPadraoLinhas = [
   ["APS / Atenção Primária", "Isento"],
   ["Consulta eletiva (por procedimento)", "R$ 20,00"],
   ["Pronto-socorro / emergência (por procedimento)", "R$ 40,00"],
@@ -1012,6 +1118,20 @@ const coparticipacaoLinhas = [
   ["Internações clínicas", "R$ 30,00"],
   ["Internações cirúrgicas", "R$ 150,00"]
 ];
+
+const coparticipacaoUberabaLinhas = [
+  ["Consulta Eletiva (Rede)", "R$ 40,00"],
+  ["Consulta Pronto-Socorro", "R$ 50,00"],
+  ["Exames", "40%, limitado a R$ 100,00 por procedimento"],
+  ["Terapias Simples (por sessão)", "40%, limitado a R$ 100,00"],
+  ["Terapias Multidisciplinares (por sessão)", "40%, limitado a R$ 100,00"],
+  ["Internação/Cirurgias - Enfermaria", "R$ 100,00"],
+  ["Internação/Cirurgias - Apartamento", "R$ 150,00"]
+];
+
+function obterLinhasCoparticipacao(){
+  return isUberaba() ? coparticipacaoUberabaLinhas : coparticipacaoPadraoLinhas;
+}
 
 function wrapTextByChars(text, maxChars){
   const words = String(text || "").split(/\s+/).filter(Boolean);
@@ -1031,13 +1151,14 @@ function wrapTextByChars(text, maxChars){
 }
 
 function tabelaCoparticipacao(doc, x, y, w){
-  const leftW = w * 0.72;
+  const leftW = isUberaba() ? w * 0.48 : w * 0.72;
   const rightW = w - leftW;
   const headerH = 8;
 
-  const linhasPreparadas = coparticipacaoLinhas.map(row => {
-    const procLines = wrapTextByChars(row[0], 48).slice(0,2);
-    const h = procLines.length > 1 ? 10.5 : 8.2;
+  const linhasPreparadas = obterLinhasCoparticipacao().map(row => {
+    const procLines = wrapTextByChars(row[0], isUberaba() ? 34 : 48).slice(0,2);
+    const valorLines = wrapTextByChars(row[1], isUberaba() ? 31 : 18).slice(0,2);
+    const h = Math.max(procLines.length, valorLines.length) > 1 ? 10.5 : 8.2;
     return { row, procLines, h };
   });
 
@@ -1068,7 +1189,10 @@ function tabelaCoparticipacao(doc, x, y, w){
       doc.text(line, x + 3, yy + 4.6 + (idx * 3.2));
     });
 
-    doc.text(item.row[1], x + leftW + (rightW/2), yy + (item.h/2) + 2, {align:"center"});
+    const valorLines = wrapTextByChars(item.row[1], isUberaba() ? 31 : 18).slice(0,2);
+    valorLines.forEach((line, idx) => {
+      doc.text(line, x + leftW + (rightW/2), yy + (item.h/2) + (valorLines.length > 1 ? 0.4 : 2) + (idx * 3.2), {align:"center"});
+    });
     yy += item.h;
   });
 
@@ -1092,7 +1216,9 @@ function paginaValores(doc){
   doc.setFontSize(13);
   doc.text("PROPOSTA DE VALORES",105,39,{align:"center"});
 
-  const lista = produtosConfig.map(p=>({id:p.id, ...produtoDados(p.id)}));
+  const lista = produtosConfig
+    .filter(p => produtoTemValor(p.id))
+    .map(p=>({id:p.id, ...produtoDados(p.id)}));
 
   const cfg = {
     titleH:8.8,
@@ -1112,14 +1238,24 @@ function paginaValores(doc){
   const rightX = 107;
   const rowsY = [45, 124, 203];
 
+  if(!lista.length){
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(9);
+    doc.setTextColor(90,90,90);
+    doc.text("Nenhum plano foi exibido porque não há valores preenchidos.", 105, 92, {align:"center"});
+    doc.setTextColor(0,0,0);
+  }
+
   lista.forEach((item,i)=>{
     const x = i % 2 === 0 ? leftX : rightX;
-    const y = rowsY[Math.floor(i/2)];
+    const y = rowsY[Math.floor(i/2)] || rowsY[rowsY.length - 1];
 
     tabelaProduto(doc,item,x,y,colW,cfg);
 
     const tabelaAltura = cfg.titleH + cfg.headerH + (faixas.length * cfg.rowH);
-    drawValorLinearResumo(doc,item.id,x,y + tabelaAltura + 1.1,colW,7.2);
+    if($(`${item.id}_linear_valor`)){
+      drawValorLinearResumo(doc,item.id,x,y + tabelaAltura + 1.1,colW,7.2);
+    }
   });
 
   // Validade da proposta dentro da área útil, acima do rodapé
@@ -1181,8 +1317,8 @@ function paginaCoparticipacao(doc){
   doc.setFont("helvetica","normal");
   doc.setFontSize(8.5);
 
-  const obs = `Esta proposta foi elaborada com base nas informações fornecidas pelo proponente, considerando, para fins de precificação, a inexistência de funcionários afastados por doença, demitidos, aposentados ou beneficiários portadores de doenças crônicas, em tratamento, em uso contínuo de medicamentos ou submetidos a terapias. Ressalta-se que a veracidade, integridade e atualização das informações prestadas são de inteira responsabilidade do proponente. Caso seja identificada qualquer omissão, divergência ou inconsistência — independentemente do momento ou motivo — os valores e as condições desta proposta poderão ser revistos, mediante nova análise e reprecificação, inclusive após o início de sua vigência.`;
-  textoJustificado(doc, obs, obsX + 9, obsY + 17, obsW - 18, 4.2, 10);
+  const obs = $("observacoesCoparticipacao") || OBSERVACOES_COPARTICIPACAO_PADRAO;
+  textoComQuebrasManuais(doc, obs, obsX + 9, obsY + 17, obsW - 18, 4.2, 10);
 
   const hoje = new Date();
   const dataFormatada = hoje.toLocaleDateString("pt-BR");
@@ -1191,6 +1327,7 @@ function paginaCoparticipacao(doc){
     ? cidadeRaw.charAt(0).toUpperCase() + cidadeRaw.slice(1).toLowerCase()
     : "Brasília";
   const estado = $("estado") || "DF";
+  const responsavelCoparticipacao = $("responsavelCoparticipacao") || "Regina Salgado";
 
   doc.setTextColor(0,0,0);
   doc.setFont("helvetica","normal");
@@ -1200,14 +1337,12 @@ function paginaCoparticipacao(doc){
   doc.line(28, 266, 80, 266);
   doc.text(`${cidade} - ${estado}, ${dataFormatada}.`, 28, 264);
 
-  const responsaveis = coletarResponsaveis();
-  const resp = responsaveis[0]?.nome || "";
-
   doc.text("RESPONSÁVEL", 128, 258);
   doc.line(128, 266, 180, 266);
-  if(resp){
+  if(responsavelCoparticipacao){
     doc.setFont("helvetica","bold");
-    doc.text(resp, 154, 264, {align:"center"});
+    doc.text(responsavelCoparticipacao, 154, 264, {align:"center"});
+    doc.setFont("helvetica","normal");
   }
 }
 
@@ -1224,12 +1359,16 @@ async function gerarPdfPropostaArrayBuffer(){
 }
 
 async function anexarAoPdfBase(propostaBuffer){
-  const basePath = "assets/PROPOSTA COMERCIAL.pdf";
-  const finalPath = "assets/PROPOSTA COMERCIAL tela final.pdf";
+  const basePath = isUberaba()
+    ? "assets/PROPOSTA COMERCIAL UBERABA.pdf"
+    : "assets/PROPOSTA COMERCIAL.pdf";
+  const finalPath = isUberaba()
+    ? "assets/PROPOSTA COMERCIAL tela final UBERABA.pdf"
+    : "assets/PROPOSTA COMERCIAL tela final.pdf";
 
   const baseResponse = await fetch(basePath);
   if(!baseResponse.ok){
-    throw new Error("PDF_BASE_NAO_ENCONTRADO");
+    throw new Error(isUberaba() ? "PDF_BASE_UBERABA_NAO_ENCONTRADO" : "PDF_BASE_NAO_ENCONTRADO");
   }
 
   const baseBytes = await baseResponse.arrayBuffer();
@@ -1265,9 +1404,10 @@ function limparNomeArquivo(texto){
 
 function nomeArquivoFinal(){
   const razao = limparNomeArquivo($("razaoSocial"));
+  const prefixo = isUberaba() ? "Proposta Comercial Uberaba" : "Proposta Comercial";
   return razao
-    ? `Proposta Comercial - ${razao}.pdf`
-    : "Proposta Comercial.pdf";
+    ? `${prefixo} - ${razao}.pdf`
+    : `${prefixo}.pdf`;
 }
 
 
@@ -1301,10 +1441,15 @@ async function gerarPDF(){
     console.error(error);
 
     if(error && error.message === "PDF_BASE_NAO_ENCONTRADO"){
-      alert('Não encontrei o arquivo "PROPOSTA COMERCIAL" dentro da pasta assets. Adicione o PDF base e tente novamente.');
+      alert('Não encontrei o arquivo "PROPOSTA COMERCIAL.pdf" dentro da pasta assets. Adicione o PDF base padrão e tente novamente.');
       return;
     }
 
-    alert("Não foi possível gerar o PDF final. Verifique se o PDF base está na pasta assets e tente novamente. A capa final deve estar como PROPOSTA COMERCIAL tela final.pdf.");
+    if(error && error.message === "PDF_BASE_UBERABA_NAO_ENCONTRADO"){
+      alert('Não encontrei o arquivo "PROPOSTA COMERCIAL UBERABA.pdf" dentro da pasta assets. Adicione o PDF base de Uberaba e tente novamente.');
+      return;
+    }
+
+    alert("Não foi possível gerar o PDF final. Verifique se os PDFs base estão na pasta assets e tente novamente.");
   }
 }

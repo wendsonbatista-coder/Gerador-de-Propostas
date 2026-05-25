@@ -31,6 +31,20 @@
       </div>
     </header>
 
+    <section class="card modelo-card">
+      <div class="modelo-card-inner">
+        <div>
+          <h2>Modelo da proposta</h2>
+          <p id="modeloPropostaHint" class="hint">Modelo padrão ativo. Serão exibidos os planos padrão da proposta comercial.</p>
+        </div>
+        <label class="toggle-card">
+          <input id="modoUberaba" type="checkbox" onchange="atualizarModeloProposta()">
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">Proposta Uberaba</span>
+        </label>
+      </div>
+    </section>
+
     <section class="card">
       <h2>Dados da empresa</h2>
       <p class="hint">Informe primeiro o CNPJ para preenchimento automático dos dados disponíveis.</p>
@@ -71,7 +85,6 @@
             <option value="TO">TO - Tocantins</option>
           </select>
         </label>
-        <label>Responsável<input id="responsavel"></label>
         <label>Corretora<input id="corretora"></label>
         <label>Vendedor<input id="vendedor"></label>
       </div>
@@ -95,13 +108,13 @@
           </select>
         </label>
         <label>Possui plano de saúde?
-          <select id="possuiPlano">
+          <select id="possuiPlano" onchange="toggleOperadora()">
             <option value="">Selecione</option>
             <option value="sim">Sim</option>
             <option value="nao">Não</option>
           </select>
         </label>
-        <label>Operadora<input id="operadora"></label>
+        <label id="operadoraWrap" class="hidden conditional-field">Operadora<input id="operadora"></label>
         <label>Tempo de contrato<input id="tempoContrato"></label>
         <label>Valor per capita<input id="valorPerCapita" inputmode="numeric" placeholder="R$ 0,00"></label>
         <label>Vidas ativas<input id="vidasAtivas"></label>
@@ -248,7 +261,7 @@
 
     <section class="card">
       <h2>Proposta de valores</h2>
-<p class="hint faixa-hint">O produto ONE aparece independente se há valores preenchidos. EVO NOW e NOW só aparecem se pelo menos um valor for preenchido.</p>
+<p id="produtosHint" class="hint faixa-hint">Somente os planos com valores preenchidos serão exibidos no documento gerado.</p>
       <p class="hint linear-hint hidden">No valor linear, serão exibidos produto, quantidade de vidas e preço linear.</p>
 
       <div id="produtos"></div>
@@ -256,12 +269,22 @@
 
 
 
-    <section class="card">
+    <section class="card copart-config-card">
       <div class="section-title-row">
-        <h2>Responsável pela proposta</h2>
+        <h2>Observações e responsável</h2>
       </div>
-      <p class="hint">Esse dado será exibido no final da página da tabela de coparticipação.</p>
-      <div id="responsaveisArea" class="responsaveis-area"></div>
+      <p class="hint">Essas informações serão exibidas no PDF gerado. O texto já vem pré-preenchido, mas pode ser alterado antes da geração.</p>
+      <label class="full numbered-textarea">Observações
+        <textarea id="observacoesCoparticipacao">Esta proposta foi elaborada com base nas informações fornecidas pelo proponente, considerando, para fins de precificação, a inexistência de funcionários afastados por doença, demitidos, aposentados ou beneficiários portadores de doenças crônicas, em tratamento, em uso contínuo de medicamentos ou submetidos a terapias. Ressalta-se que a veracidade, integridade e atualização das informações prestadas são de inteira responsabilidade do proponente. Caso seja identificada qualquer omissão, divergência ou inconsistência — independentemente do momento ou motivo — os valores e as condições desta proposta poderão ser revistos, mediante nova análise e reprecificação, inclusive após o início de sua vigência.</textarea>
+      </label>
+      <div class="grid copart-responsavel-grid">
+        <label>Responsável
+          <input id="responsavelCoparticipacao" value="Regina Salgado" placeholder="Nome do responsável">
+        </label>
+        <div class="copart-actions-inline">
+          <button type="button" class="secondary small-action" onclick="restaurarObservacaoCoparticipacao()">Restaurar observação padrão</button>
+        </div>
+      </div>
     </section>
 
 
