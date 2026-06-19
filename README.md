@@ -1,29 +1,51 @@
-⚙️ Como Executar o Projeto
-Como a aplicação foi construída utilizando arquitetura client-side pura (Vanilla JS), não é necessário instalar dependências ou configurar ambientes de execução complexos.
+# Gerador de Propostas Comerciais - EVO Saúde
 
-Transfira ou clone este repositório para a sua máquina local.
+Uma aplicação Web *Single Page Application* (SPA) focada na automação e geração de propostas comerciais no formato PDF para os corretores e equipa comercial da EVO Saúde.
 
-Certifique-se de que os PDFs base institucionais estão guardados dentro da diretoria correta especificada no código (ex: assets/).
+## 🎯 Objetivo
+Transformar a experiência de vendas de planos de saúde, permitindo que o corretor preencha dados cadastrais, defina o modelo regional (Padrão ou Uberaba), valide o questionário de risco e gere, num único clique, um PDF comercial híbrido (que funde as páginas geradas dinamicamente com os materiais institucionais da marca). Tudo isto processado exclusivamente no lado do cliente (*Client-side*).
 
-Abra o ficheiro index.html diretamente em qualquer navegador moderno.
+## ✨ Funcionalidades Principais
+* **Preenchimento Automático via API:** Integração com a *BrasilAPI* para consulta do CNPJ (retornando Razão Social, CEP, UF, etc.) e com a API do *ViaCEP*.
+* **Cálculo e Renderização Dinâmica:** Dependendo do modelo selecionado (Uberaba ou Padrão), a aplicação exibe opções distintas de produtos e de tabelas de comparticipação, formatando automaticamente os valores monetários.
+* **Questionário de Risco Inteligente:** Atribuição dinâmica de campos numéricos (ex: Quantidade de pessoas com obesidade ou afastamento) apenas quando a resposta ao questionário é afirmativa.
+* **Geração Vetorial de PDF (jsPDF):** Desenho programático (em coordenadas `X/Y`) de formulários, caixas de seleção, descrições de produtos e valores. 
+* **Mesclagem de Ficheiros (pdf-lib):** Capacidade de anexar as páginas preenchidas a um PDF institucional de fundo, criando um documento polido e profissional pronto para o cliente.
+* **Persistência de Dados e Histórico:** Armazenamento no `localStorage` do navegador, criando *snapshots* do formulário. Permite que o utilizador edite propostas antigas e exporte o seu histórico para `.csv`.
+* **Modo Escuro (Dark Mode):** Suporte nativo a um tema claro e escuro para melhor ergonomia visual, mantendo as diretrizes da marca da EVO Saúde.
 
-Recomendação: Para garantir o correto funcionamento das requisições assíncronas de ficheiros locais (PDFs base), execute o projeto utilizando um servidor local simples, como a extensão Live Server do VS Code ou o módulo nativo do Python:
+## 🛠 Arquitetura e Stack Tecnológico
+A aplicação foi construída visando ser leve, rápida e isenta da necessidade de uma infraestrutura de *back-end* (servidor).
+- **HTML5 & CSS3:** Semântica web e folhas de estilo modernas com *Custom Properties* (Variáveis) para o controlo da identidade visual ("Premium UI").
+- **JavaScript Vanilla (ES6+):** Motor lógico da aplicação, manipulando o DOM, APIs e ficheiros.
+- **jsPDF:** Biblioteca base para criação programática do PDF de dados.
+- **pdf-lib:** Biblioteca avançada que permite o *merge* (fusão) dos PDFs criados com os PDFs estáticos do diretório de *assets*.
 
-Bash
-python -m http.server 8000
-Depois, aceda a http://localhost:8000 no seu navegador.
+## 📁 Estrutura de Ficheiros
+```
+/
+├── index.html                           # Interface estrutural principal
+├── style.css                            # Folha de estilos (Variáveis, Animações, Dark Mode)
+├── script.js                            # Cérebro da aplicação (APIs, jsPDF, pdf-lib, Lógica)
+└── /assets                              # Ficheiros de recursos estáticos
+    ├── logo.png                         # Logotipo primário
+    ├── logo-header.png                  # Logotipo secundário
+    ├── watermark-gray.png               # Marca de água para o PDF
+    ├── PROPOSTA COMERCIAL.pdf           # Ficheiro PDF base de marketing (Padrão)
+    ├── PROPOSTA COMERCIAL UBERABA.pdf   # Ficheiro PDF base de marketing (Uberaba)
+    └── PROPOSTA COMERCIAL tela final.pdf# Página final de encerramento do PDF
+```
 
-📄 Fluxo Técnico de Geração de PDF
-O motor de compilação de documentos executa duas fases encadeadas de forma assíncrona:
+## 🚀 Como Executar o Projeto
+Uma vez que o projeto corre a 100% no *browser* do cliente, basta realizar os seguintes passos:
+1. Extrair os ficheiros para uma pasta local.
+2. É estritamente recomendado usar um servidor local simples (como o **Live Server** no VSCode ou a extensão de Python `python -m http.server`) para evitar erros de CORS ao ler ficheiros estáticos locais (`.pdf`) pelo `pdf-lib`.
+3. Abrir o `index.html` no navegador.
+4. Preencher o formulário (teste colocar um CNPJ válido para ver o autopreenchimento).
+5. Clicar em **Gerar Proposta**.
 
-Fase de Desenho (jsPDF): O script lê todos os inputs ativos do formulário e calcula as coordenadas X e Y numa folha A4 virtual. Tabelas, caixas de seleção e textos formatados são desenhados milimetricamente, gerando um ArrayBuffer binário em memória.
+## 📝 Regras de Negócio e Cálculos
+As tabelas de preços e os blocos de coparticipação são extraídos dos *arrays* de configuração definidos em `script.js` (`produtosPadraoConfig` e `produtosUberabaConfig`). Sempre que o corretor pressiona o botão *switch* de "Proposta Uberaba", o DOM é reconstruído para refletir apenas os planos disponíveis para essa região, e o documento base utilizado na compilação do PDF passa a ser o respetivo *asset* do Uberaba.
 
-Fase de Injeção e Fusão (pdf-lib): O sistema descarrega o PDF de marketing correspondente ao modelo selecionado, carrega o buffer do jsPDF e realiza a cópia e anexação das páginas dinâmicas ao documento base. O utilizador recebe o ficheiro final unificado para transferência imediata.
-
-🔏 Privacidade e Segurança
-Por operar inteiramente no ecossistema do navegador do utilizador, nenhum dado comercial, cadastral ou financeiro é enviado para servidores externos. Toda a persistência é estritamente local (localStorage), garantindo conformidade nativa com as boas práticas de proteção de dados sensíveis corporativos.
-"""
-
-output_path = "README.md"
-with open(output_path, "w", encoding="utf-8") as f:
-f.write(readme_content)
+## ⚖️ Licença e Uso
+Desenvolvido exclusivamente para a **EVO Saúde** visando o controlo interno das suas operações comerciais.
