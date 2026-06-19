@@ -48,4 +48,4 @@ Uma vez que o projeto corre a 100% no *browser* do cliente, basta realizar os se
 As tabelas de preços e os blocos de coparticipação são extraídos dos *arrays* de configuração definidos em `script.js` (`produtosPadraoConfig` e `produtosUberabaConfig`). Sempre que o corretor pressiona o botão *switch* de "Proposta Uberaba", o DOM é reconstruído para refletir apenas os planos disponíveis para essa região, e o documento base utilizado na compilação do PDF passa a ser o respetivo *asset* do Uberaba.
 
 ## ⚖️ Licença e Uso
-Desenvolvido exclusivamente para a **EVO Saúde** visando o controlo interno das suas operações comerciais.
+Desenvolvido exclusivamente para a **EVO Saúde** como projeto de estudo, visando facilitar o processo interno das suas operações comerciais.
