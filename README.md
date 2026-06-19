@@ -1,6 +1,6 @@
 # Gerador de Propostas Comerciais - EVO Saúde
 
-Uma aplicação Web *Single Page Application* (SPA) focada na automação e geração de propostas comerciais no formato PDF para os corretores e equipa comercial da EVO Saúde.
+Uma aplicação Web *Single Page Application* (SPA) focada na automação e geração de propostas comerciais no formato PDF para a equipe comercial da EVO Saúde.
 
 ## 🎯 Objetivo
 Transformar a experiência de vendas de planos de saúde, permitindo que o corretor preencha dados cadastrais, defina o modelo regional (Padrão ou Uberaba), valide o questionário de risco e gere, num único clique, um PDF comercial híbrido (que funde as páginas geradas dinamicamente com os materiais institucionais da marca). Tudo isto processado exclusivamente no lado do cliente (*Client-side*).
